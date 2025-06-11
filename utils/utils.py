@@ -21,19 +21,34 @@ from collections import Counter
 import streamlit as st
 
 # --- NLTK Data Downloads ---
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
-try:
-    nltk.data.find('tokenizers/punkt_tab') 
-except LookupError:
-    st.info("NLTK 'punkt' data is being downloaded (or confirmed).")
-try:
-    nltk.data.find('corpora/stopwords')
-except LookupError:
-    nltk.download('stopwords')
-    st.info("NLTK 'stopwords' data is being downloaded (or confirmed).")
+@st.cache_resource
+def download_nltk_data():
+    try:
+        nltk.data.find('tokenizers/punkt')
+        st.info("NLTK 'punkt' data already present.")
+    except LookupError:
+        st.info("NLTK 'punkt' data not found, attempting download...")
+        nltk.download('punkt', quiet=True) # quiet=True agar tidak terlalu banyak output di log
+        st.success("NLTK 'punkt' data downloaded successfully!")
+
+    try:
+        nltk.data.find('corpora/stopwords')
+        st.info("NLTK 'stopwords' data already present.")
+    except LookupError:
+        st.info("NLTK 'stopwords' data not found, attempting download...")
+        nltk.download('stopwords', quiet=True)
+        st.success("NLTK 'stopwords' data downloaded successfully!")
+
+    # Opsional: Jika Anda menggunakan wordnet atau lainnya
+    # try:
+    #     nltk.data.find('corpora/wordnet')
+    # except LookupError:
+    #     nltk.download('wordnet', quiet=True)
+    #     st.success("NLTK 'wordnet' data downloaded successfully!")
+
+# Panggil fungsi unduhan di awal script, sebelum fungsi NLTK digunakan
+download_nltk_data()
+# --- Akhir penambahan ---
 
 factory = StemmerFactory()
 stemmer = factory.create_stemmer()
