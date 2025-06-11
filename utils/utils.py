@@ -21,23 +21,9 @@ from collections import Counter
 import streamlit as st
 
 # --- NLTK Data Downloads ---
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
-try:
-    nltk.data.find('tokenizers/punkt_tab') 
-except LookupError:
-    st.info("NLTK 'punkt' data is being downloaded (or confirmed).")
-
-
-try:
-    nltk.data.find('corpora/stopwords')
-except LookupError:
-    nltk.download('stopwords')
-    st.info("NLTK 'stopwords' data is being downloaded (or confirmed).")
-
-
+nltk_data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'nltk_data')
+if nltk_data_path not in nltk.data.path:
+    nltk.data.path.insert(0, nltk_data_path)
 
 factory = StemmerFactory()
 stemmer = factory.create_stemmer()
