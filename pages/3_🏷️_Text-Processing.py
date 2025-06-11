@@ -50,9 +50,7 @@ def main():
 
         # Step 3: Normalization
         norm_dict = None
-        kamus_path = os.path.join(os.getcwd(), "assets", "kamuskatabaku.xlsx")
-
-        st.info(f"Mencari kamus normalization di: {kamus_path}")
+        kamus_path = os.path.join("assets", "kamuskatabaku.xlsx")
         
         if os.path.exists(kamus_path):
             try:
