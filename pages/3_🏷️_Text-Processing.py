@@ -50,7 +50,9 @@ def main():
 
         # Step 3: Normalization
         norm_dict = None
-        kamus_path = os.path.join("assets", "kamuskatabaku.xlsx")
+        kamus_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', "assets", "kamuskatabaku.xlsx")
+
+        st.info(f"Mencoba memuat kamus dari: {kamus_path}")
         
         if os.path.exists(kamus_path):
             try:
