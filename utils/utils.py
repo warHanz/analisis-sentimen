@@ -20,10 +20,17 @@ from wordcloud import WordCloud
 from collections import Counter
 import streamlit as st
 
-nltk.download(['punkt', 'stopwords'], quiet=True)
+try:
+    nltk.data.find('corpora/stopwords')
+except LookupError:
+    st.info("NLTK 'stopwords' data not found, attempting download...")
+    nltk.download('stopwords', quiet=True)
+    st.success("NLTK 'stopwords' data downloaded successfully!")
+
 nltk.download('punkt')
 nltk.download('wordnet')
 nltk.download('omw-1.4')
+# --- Akhir NLTK Data Downloads ---
 
 factory = StemmerFactory()
 stemmer = factory.create_stemmer()
