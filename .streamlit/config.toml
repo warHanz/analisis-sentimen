@@ -1,0 +1,17 @@
+[server]
+# This defines an environment variable for NLTK data
+# NLTK will look for data in /app/your-project-name/nltk_data by default on Streamlit Cloud
+# You can also use /tmp/nltk_data if you prefer a temporary directory, but let's try this first.
+# Important: ensure 'nltk_data' folder exists at the root of your repo when deploying!
+# However, since you don't want a folder in git, we will make NLTK download to this path.
+# NLTK_DATA = "/tmp/nltk_data" # Alternative: if you prefer temporary and not in Git
+
+# Let's stick to the previous tempfile approach for downloading,
+# but ensure NLTK's path is set via an env variable that Streamlit will manage.
+# The best approach for your "no folder in Git" constraint is to use the temp directory
+# but ensure the NLTK_DATA environment variable points to it.
+
+# Let's set an environment variable for NLTK to use for its data.
+# This variable points to a location *inside* the ephemeral Streamlit container.
+# We'll use the /tmp directory, which is writable.
+NLTK_DATA = "/tmp/nltk_data_for_app"
