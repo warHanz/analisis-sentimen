@@ -21,34 +21,52 @@ from collections import Counter
 import streamlit as st
 
 # --- NLTK Data Downloads ---
-@st.cache_resource
-def download_nltk_data():
+# Dapatkan path direktori kerja saat ini di mana aplikasi Streamlit berjalan (yaitu root repo)
+# Di Streamlit Cloud, ini akan menjadi /mount/src/analisis-sentimen/
+app_root_dir = os.getcwd()
+
+# Definisikan folder khusus untuk NLTK data di dalam root aplikasi Anda
+nltk_data_dir = os.path.join(app_root_dir, 'nltk_data_custom')
+
+# Buat direktori jika belum ada
+if not os.path.exists(nltk_data_dir):
+    os.makedirs(nltk_data_dir, exist_ok=True)
+    st.info(f"Created NLTK data directory: {nltk_data_dir}")
+
+# Tambahkan path ini ke NLTK
+# Insert(0) agar NLTK mencari di sini terlebih dahulu
+if nltk_data_dir not in nltk.data.path:
+    nltk.data.path.insert(0, nltk_data_dir)
+    st.info(f"NLTK data path added: {nltk_data_dir}. Current NLTK paths: {nltk.data.path}")
+
+@st.cache_resource # Pastikan ini dijalankan hanya sekali per sesi deploy
+def download_nltk_resources():
+    # Mengunduh 'punkt'
     try:
-        nltk.data.find('tokenizers/punkt')
-        st.info("NLTK 'punkt' data already present.")
+        nltk.data.find('tokenizers/punkt', paths=[nltk_data_dir]) # Cari di path kustom dulu
+        st.info("NLTK 'punkt' data already found in custom path.")
     except LookupError:
-        st.info("NLTK 'punkt' data not found, attempting download...")
-        nltk.download('punkt', quiet=True) # quiet=True agar tidak terlalu banyak output di log
-        st.success("NLTK 'punkt' data downloaded successfully!")
+        st.info(f"NLTK 'punkt' data not found, attempting download to {nltk_data_dir}...")
+        try:
+            nltk.download('punkt', download_dir=nltk_data_dir, quiet=True)
+            st.success("NLTK 'punkt' data downloaded successfully to custom path!")
+        except Exception as e:
+            st.error(f"Error downloading NLTK 'punkt' data: {e}")
 
+    # Mengunduh 'stopwords'
     try:
-        nltk.data.find('corpora/stopwords')
-        st.info("NLTK 'stopwords' data already present.")
+        nltk.data.find('corpora/stopwords', paths=[nltk_data_dir]) # Cari di path kustom dulu
+        st.info("NLTK 'stopwords' data already found in custom path.")
     except LookupError:
-        st.info("NLTK 'stopwords' data not found, attempting download...")
-        nltk.download('stopwords', quiet=True)
-        st.success("NLTK 'stopwords' data downloaded successfully!")
+        st.info(f"NLTK 'stopwords' data not found, attempting download to {nltk_data_dir}...")
+        try:
+            nltk.download('stopwords', download_dir=nltk_data_dir, quiet=True)
+            st.success("NLTK 'stopwords' data downloaded successfully to custom path!")
+        except Exception as e:
+            st.error(f"Error downloading NLTK 'stopwords' data: {e}")
 
-    # Opsional: Jika Anda menggunakan wordnet atau lainnya
-    # try:
-    #     nltk.data.find('corpora/wordnet')
-    # except LookupError:
-    #     nltk.download('wordnet', quiet=True)
-    #     st.success("NLTK 'wordnet' data downloaded successfully!")
-
-# Panggil fungsi unduhan di awal script, sebelum fungsi NLTK digunakan
-download_nltk_data()
-# --- Akhir penambahan ---
+# Panggil fungsi unduhan
+download_nltk_resources()
 
 factory = StemmerFactory()
 stemmer = factory.create_stemmer()
