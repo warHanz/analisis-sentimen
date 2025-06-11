@@ -20,15 +20,22 @@ from wordcloud import WordCloud
 from collections import Counter
 import streamlit as st
 
+# --- NLTK Data Downloads ---
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
     nltk.download('punkt')
+try:
+    nltk.data.find('tokenizers/punkt_tab') 
+except LookupError:
+    st.info("NLTK 'punkt' data is being downloaded (or confirmed).")
+
 
 try:
     nltk.data.find('corpora/stopwords')
 except LookupError:
     nltk.download('stopwords')
+    st.info("NLTK 'stopwords' data is being downloaded (or confirmed).")
 
 
 
