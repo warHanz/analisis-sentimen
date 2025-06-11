@@ -3,6 +3,24 @@ import pandas as pd
 import os
 from utils.utils import *
 
+# --- NLTK Data Downloads ---
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+try:
+    nltk.data.find('tokenizers/punkt_tab') 
+except LookupError:
+    st.info("NLTK 'punkt' data is being downloaded (or confirmed).")
+try:
+    nltk.data.find('corpora/stopwords')
+except LookupError:
+    nltk.download('stopwords')
+    st.info("NLTK 'stopwords' data is being downloaded (or confirmed).")
+
+factory = StemmerFactory()
+stemmer = factory.create_stemmer()
+
 # Konfigurasi halaman
 st.set_page_config(layout="wide", page_title="Preprocessing Data")
 
