@@ -10,3 +10,4 @@ scikit-learn
 Sastrawi
 openpyxl
 google-play-scraper
+pandas-datareader
