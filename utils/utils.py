@@ -20,7 +20,18 @@ from wordcloud import WordCloud
 from collections import Counter
 import streamlit as st
 
-nltk.download(['punkt', 'stopwords'], quiet=True)
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+
+try:
+    nltk.data.find('corpora/stopwords')
+except LookupError:
+    nltk.download('stopwords')
+
+
+
 factory = StemmerFactory()
 stemmer = factory.create_stemmer()
 
