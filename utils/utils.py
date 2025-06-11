@@ -19,54 +19,53 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 from wordcloud import WordCloud
 from collections import Counter
 import streamlit as st
+import tempfile
 
 # --- NLTK Data Downloads ---
 # Dapatkan path direktori kerja saat ini di mana aplikasi Streamlit berjalan (yaitu root repo)
 # Di Streamlit Cloud, ini akan menjadi /mount/src/analisis-sentimen/
-app_root_dir = os.getcwd()
+@st.cache_resource
+def setup_nltk_data():
+    # Use a temporary directory for NLTK data
+    # This directory is guaranteed to be writable by the app
+    temp_nltk_data_dir = os.path.join(tempfile.gettempdir(), "nltk_data_temp")
+    
+    if not os.path.exists(temp_nltk_data_dir):
+        os.makedirs(temp_nltk_data_dir, exist_ok=True)
+        st.info(f"Created temporary NLTK data directory: {temp_nltk_data_dir}")
 
-# Definisikan folder khusus untuk NLTK data di dalam root aplikasi Anda
-nltk_data_dir = os.path.join(app_root_dir, 'nltk_data_custom')
+    # Add the temporary directory to NLTK's data path
+    if temp_nltk_data_dir not in nltk.data.path:
+        # Insert at the beginning so NLTK looks here first
+        nltk.data.path.insert(0, temp_nltk_data_dir)
+        st.info(f"NLTK data path added: {temp_nltk_data_dir}. Current NLTK paths: {nltk.data.path}")
 
-# Buat direktori jika belum ada
-if not os.path.exists(nltk_data_dir):
-    os.makedirs(nltk_data_dir, exist_ok=True)
-    st.info(f"Created NLTK data directory: {nltk_data_dir}")
-
-# Tambahkan path ini ke NLTK
-# Insert(0) agar NLTK mencari di sini terlebih dahulu
-if nltk_data_dir not in nltk.data.path:
-    nltk.data.path.insert(0, nltk_data_dir)
-    st.info(f"NLTK data path added: {nltk_data_dir}. Current NLTK paths: {nltk.data.path}")
-
-@st.cache_resource # Pastikan ini dijalankan hanya sekali per sesi deploy
-def download_nltk_resources():
-    # Mengunduh 'punkt'
+    # Download 'punkt' if not found in the custom path
     try:
-        nltk.data.find('tokenizers/punkt', paths=[nltk_data_dir]) # Cari di path kustom dulu
-        st.info("NLTK 'punkt' data already found in custom path.")
+        nltk.data.find('tokenizers/punkt', paths=[temp_nltk_data_dir])
+        st.info("NLTK 'punkt' data already found in temporary path.")
     except LookupError:
-        st.info(f"NLTK 'punkt' data not found, attempting download to {nltk_data_dir}...")
+        st.info(f"NLTK 'punkt' data not found, attempting download to {temp_nltk_data_dir}...")
         try:
-            nltk.download('punkt', download_dir=nltk_data_dir, quiet=True)
-            st.success("NLTK 'punkt' data downloaded successfully to custom path!")
+            nltk.download('punkt', download_dir=temp_nltk_data_dir, quiet=True)
+            st.success("NLTK 'punkt' data downloaded successfully to temporary path!")
         except Exception as e:
             st.error(f"Error downloading NLTK 'punkt' data: {e}")
 
-    # Mengunduh 'stopwords'
+    # Download 'stopwords' if not found in the custom path
     try:
-        nltk.data.find('corpora/stopwords', paths=[nltk_data_dir]) # Cari di path kustom dulu
-        st.info("NLTK 'stopwords' data already found in custom path.")
+        nltk.data.find('corpora/stopwords', paths=[temp_nltk_data_dir])
+        st.info("NLTK 'stopwords' data already found in temporary path.")
     except LookupError:
-        st.info(f"NLTK 'stopwords' data not found, attempting download to {nltk_data_dir}...")
+        st.info(f"NLTK 'stopwords' data not found, attempting download to {temp_nltk_data_dir}...")
         try:
-            nltk.download('stopwords', download_dir=nltk_data_dir, quiet=True)
-            st.success("NLTK 'stopwords' data downloaded successfully to custom path!")
+            nltk.download('stopwords', download_dir=temp_nltk_data_dir, quiet=True)
+            st.success("NLTK 'stopwords' data downloaded successfully to temporary path!")
         except Exception as e:
             st.error(f"Error downloading NLTK 'stopwords' data: {e}")
 
-# Panggil fungsi unduhan
-download_nltk_resources()
+# Call the setup function immediately
+setup_nltk_data()
 
 factory = StemmerFactory()
 stemmer = factory.create_stemmer()
