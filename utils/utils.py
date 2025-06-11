@@ -21,6 +21,9 @@ from collections import Counter
 import streamlit as st
 
 nltk.download(['punkt', 'stopwords'], quiet=True)
+nltk.download('punkt')
+nltk.download('wordnet')
+nltk.download('omw-1.4')
 
 factory = StemmerFactory()
 stemmer = factory.create_stemmer()
