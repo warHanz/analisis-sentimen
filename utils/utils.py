@@ -19,53 +19,8 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 from wordcloud import WordCloud
 from collections import Counter
 import streamlit as st
-import tempfile
 
-# --- NLTK Data Downloads ---
-# Dapatkan path direktori kerja saat ini di mana aplikasi Streamlit berjalan (yaitu root repo)
-# Di Streamlit Cloud, ini akan menjadi /mount/src/analisis-sentimen/
-@st.cache_resource
-def setup_nltk_data():
-    # Use a temporary directory for NLTK data
-    # This directory is guaranteed to be writable by the app
-    temp_nltk_data_dir = os.path.join(tempfile.gettempdir(), "nltk_data_temp")
-    
-    if not os.path.exists(temp_nltk_data_dir):
-        os.makedirs(temp_nltk_data_dir, exist_ok=True)
-        st.info(f"Created temporary NLTK data directory: {temp_nltk_data_dir}")
-
-    # Add the temporary directory to NLTK's data path
-    if temp_nltk_data_dir not in nltk.data.path:
-        # Insert at the beginning so NLTK looks here first
-        nltk.data.path.insert(0, temp_nltk_data_dir)
-        st.info(f"NLTK data path added: {temp_nltk_data_dir}. Current NLTK paths: {nltk.data.path}")
-
-    # Download 'punkt' if not found in the custom path
-    try:
-        nltk.data.find('tokenizers/punkt', paths=[temp_nltk_data_dir])
-        st.info("NLTK 'punkt' data already found in temporary path.")
-    except LookupError:
-        st.info(f"NLTK 'punkt' data not found, attempting download to {temp_nltk_data_dir}...")
-        try:
-            nltk.download('punkt', download_dir=temp_nltk_data_dir, quiet=True)
-            st.success("NLTK 'punkt' data downloaded successfully to temporary path!")
-        except Exception as e:
-            st.error(f"Error downloading NLTK 'punkt' data: {e}")
-
-    # Download 'stopwords' if not found in the custom path
-    try:
-        nltk.data.find('corpora/stopwords', paths=[temp_nltk_data_dir])
-        st.info("NLTK 'stopwords' data already found in temporary path.")
-    except LookupError:
-        st.info(f"NLTK 'stopwords' data not found, attempting download to {temp_nltk_data_dir}...")
-        try:
-            nltk.download('stopwords', download_dir=temp_nltk_data_dir, quiet=True)
-            st.success("NLTK 'stopwords' data downloaded successfully to temporary path!")
-        except Exception as e:
-            st.error(f"Error downloading NLTK 'stopwords' data: {e}")
-
-# Call the setup function immediately
-setup_nltk_data()
+nltk.download(['punkt', 'stopwords'], quiet=True)
 
 factory = StemmerFactory()
 stemmer = factory.create_stemmer()
@@ -119,17 +74,19 @@ def load_data(uploaded_file):
         st.error("Format file tidak didukung. Harap unggah file CSV atau Excel.")
         return None
 
-def load_preprocessed_data(filepath="temp_preprocessed_data.csv"):
-    """Load preprocessed data from a temporary CSV file."""
+def load_preprocessed_data(uploaded_file):
+    """Load preprocessed data from an uploaded CSV file."""
     try:
-        if os.path.exists(filepath):
-            df = pd.read_csv(filepath)
+        if uploaded_file is not None:
+            df = pd.read_csv(uploaded_file)
             # Convert 'stemmed' column from string representation to list
             if 'stemmed' in df.columns:
-                df['stemmed'] = df['stemmed'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+                df['stemmed'] = df['stemmed'].apply(
+                    lambda x: ast.literal_eval(x.strip()) if isinstance(x, str) and x.strip() else []
+                )
             return df
         else:
-            st.error("File data yang telah diproses tidak ditemukan.")
+            st.error("File CSV hasil preprocessing belum diunggah.")
             return None
     except Exception as e:
         st.error(f"Gagal memuat data yang telah diproses: {e}")

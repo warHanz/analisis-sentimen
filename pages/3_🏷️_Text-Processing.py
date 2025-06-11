@@ -14,7 +14,7 @@ def main():
     uploaded_file = st.file_uploader("Unggah file dataset (CSV/Excel)", type=["csv", "xlsx"], key="data_uploader")
 
     if uploaded_file is None:
-        st.info("Silakan unggah file dataset untuk memulai preprocessing.")
+        st.info("Silakan unggah CSV atau Excel untuk memulai preprocessing.")
         return
 
     with st.spinner("Memproses data..."):
@@ -50,17 +50,14 @@ def main():
 
         # Step 3: Normalization
         norm_dict = None
-        kamus_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', "assets", "kamuskatabaku.xlsx")
-
-        st.info(f"Mencoba memuat kamus dari: {kamus_path}")
-        
+        kamus_path = os.path.join("assets", "kamuskatabaku.xlsx")
         if os.path.exists(kamus_path):
             try:
                 kamus = pd.read_excel(kamus_path)
                 norm_dict = dict(zip(kamus['tidak_baku'], kamus['kata_baku']))
                 processed_data['normalize'] = processed_data['cleaning'].apply(lambda x: normalize_text(x, norm_dict))
             except Exception as e:
-                st.warning(f"Gagal membaca kamuskatabaku.xlsx: {e}")
+                st.warning(f"Gagal membaca kamusikatabaku.xlsx: {e}")
                 processed_data['normalize'] = processed_data['cleaning']
         else:
             st.warning("File 'kamuskatabaku.xlsx' tidak ditemukan. Normalisasi dilewati.")
@@ -99,7 +96,15 @@ def main():
 
         # Save preprocessed data
         if save_preprocessed_data(processed_data):
-            st.success("Data telah diproses dan disimpan. Silakan buka halaman 'Analisis' untuk melihat hasil.")
+            st.success("Data berhasil diproses dan disimpan. Unduh file CSV untuk digunakan di halaman Analisis.")
+            # Provide download button for the preprocessed CSV
+            with open("temp_preprocessed_data.csv", "rb") as file:
+                st.download_button(
+                    label="Download Preprocessed CSV",
+                    data=file,
+                    file_name="temp_preprocessed_data.csv",
+                    mime="text/csv"
+                )
         else:
             st.error("Gagal menyimpan data. Tidak dapat melanjutkan ke analisis.")
 
