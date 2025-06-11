@@ -20,7 +20,8 @@ from wordcloud import WordCloud
 from collections import Counter
 import streamlit as st
 
-
+nltk.download('punkt', quiet=True)
+nltk.download('stopwords', quiet=True)
 
 factory = StemmerFactory()
 stemmer = factory.create_stemmer()
