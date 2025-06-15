@@ -19,53 +19,9 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 from wordcloud import WordCloud
 from collections import Counter
 import streamlit as st
-import tempfile
 
-# --- NLTK Data Downloads ---
-# Dapatkan path direktori kerja saat ini di mana aplikasi Streamlit berjalan (yaitu root repo)
-# Di Streamlit Cloud, ini akan menjadi /mount/src/analisis-sentimen/
-@st.cache_resource
-def setup_nltk_data():
-    # Use a temporary directory for NLTK data
-    # This directory is guaranteed to be writable by the app
-    temp_nltk_data_dir = os.path.join(tempfile.gettempdir(), "nltk_data_temp")
-    
-    if not os.path.exists(temp_nltk_data_dir):
-        os.makedirs(temp_nltk_data_dir, exist_ok=True)
-        st.info(f"Created temporary NLTK data directory: {temp_nltk_data_dir}")
-
-    # Add the temporary directory to NLTK's data path
-    if temp_nltk_data_dir not in nltk.data.path:
-        # Insert at the beginning so NLTK looks here first
-        nltk.data.path.insert(0, temp_nltk_data_dir)
-        st.info(f"NLTK data path added: {temp_nltk_data_dir}. Current NLTK paths: {nltk.data.path}")
-
-    # Download 'punkt' if not found in the custom path
-    try:
-        nltk.data.find('tokenizers/punkt', paths=[temp_nltk_data_dir])
-        st.info("NLTK 'punkt' data already found in temporary path.")
-    except LookupError:
-        st.info(f"NLTK 'punkt' data not found, attempting download to {temp_nltk_data_dir}...")
-        try:
-            nltk.download('punkt', download_dir=temp_nltk_data_dir, quiet=True)
-            st.success("NLTK 'punkt' data downloaded successfully to temporary path!")
-        except Exception as e:
-            st.error(f"Error downloading NLTK 'punkt' data: {e}")
-
-    # Download 'stopwords' if not found in the custom path
-    try:
-        nltk.data.find('corpora/stopwords', paths=[temp_nltk_data_dir])
-        st.info("NLTK 'stopwords' data already found in temporary path.")
-    except LookupError:
-        st.info(f"NLTK 'stopwords' data not found, attempting download to {temp_nltk_data_dir}...")
-        try:
-            nltk.download('stopwords', download_dir=temp_nltk_data_dir, quiet=True)
-            st.success("NLTK 'stopwords' data downloaded successfully to temporary path!")
-        except Exception as e:
-            st.error(f"Error downloading NLTK 'stopwords' data: {e}")
-
-# Call the setup function immediately
-setup_nltk_data()
+nltk.download('punkt', quiet=True)
+nltk.download('stopwords', quiet=True)
 
 factory = StemmerFactory()
 stemmer = factory.create_stemmer()
@@ -92,23 +48,11 @@ CUSTOM_STOPWORDS = {
 
 STOPWORDS_ALL = set(stopwords.words('indonesian')).union(STOPWORDS_TO_REMOVE)
 
-def load_sentiment_lexicon():
-    positive_url = "https://raw.githubusercontent.com/fajri91/InSet/master/positive.tsv"
-    negative_url = "https://raw.githubusercontent.com/fajri91/InSet/master/negative.tsv"
-
-    try:
-        positive_lexicon = set(pd.read_csv(positive_url, sep="\t", header=None)[0])
-    except Exception as e:
-        st.warning(f"Gagal memuat positive.tsv dari URL: {e}")
-        positive_lexicon = set()
-
-    try:
-        negative_lexicon = set(pd.read_csv(negative_url, sep="\t", header=None)[0])
-    except Exception as e:
-        st.warning(f"Gagal memuat negative.tsv dari URL: {e}")
-        negative_lexicon = set()
-
-    return positive_lexicon, negative_lexicon
+try:
+    STOPWORDS_ALL = set(stopwords.words('indonesian')).union(STOPWORDS_TO_REMOVE)
+except LookupError:
+    st.warning("NLTK 'indonesian' stopwords data not found. Using only custom and removed stopwords.")
+    STOPWORDS_ALL = STOPWORDS_TO_REMOVE
 
 def load_data(uploaded_file):
     try:
@@ -119,17 +63,18 @@ def load_data(uploaded_file):
         st.error("Format file tidak didukung. Harap unggah file CSV atau Excel.")
         return None
 
-def load_preprocessed_data(filepath="temp_preprocessed_data.csv"):
-    """Load preprocessed data from a temporary CSV file."""
+def load_preprocessed_data(uploaded_file):
+    """Load preprocessed data from an uploaded CSV file."""
     try:
-        if os.path.exists(filepath):
-            df = pd.read_csv(filepath)
-            # Convert 'stemmed' column from string representation to list
+        if uploaded_file is not None:
+            df = pd.read_csv(uploaded_file)
             if 'stemmed' in df.columns:
-                df['stemmed'] = df['stemmed'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+                df['stemmed'] = df['stemmed'].apply(
+                    lambda x: ast.literal_eval(x.strip()) if isinstance(x, str) and x.strip() else []
+                )
             return df
         else:
-            st.error("File data yang telah diproses tidak ditemukan.")
+            st.error("File CSV hasil preprocessing belum diunggah.")
             return None
     except Exception as e:
         st.error(f"Gagal memuat data yang telah diproses: {e}")
@@ -156,9 +101,7 @@ def preprocess_data(data):
 def clean_text(text):
     if pd.isna(text):
         return ''
-    text = str(text
-
-).lower()
+    text = str(text).lower()
     text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
     text = re.sub(r'@\w+', '', text)
     text = re.sub(r'#\w+', '', text)
@@ -190,23 +133,21 @@ def stem_tokens(tokens):
     stemmed = [stemmer.stem(token) for token in tokens]
     return [token for token in stemmed if len(token) >= 3]
 
-def label_sentiment(tokens, positive_words, negative_words):
+def label_sentiment(rating):
     """
-    Label sentiment based on tokenized words, counting matches in positive/negative lexicons.
-    Returns a sentiment score and label (Positive, Negative, Neutral).
+    Label sentiment based on rating value.
+    Returns a sentiment label (Positive, Negative, Neutral).
     """
-    positive_count = sum(1 for token in tokens if token in positive_words)
-    negative_count = sum(1 for token in tokens if token in negative_words)
-    sentiment_score = positive_count - negative_count
-
-    if sentiment_score > 0:
-        sentiment = "Positive"
-    elif sentiment_score < 0:
-        sentiment = "Negative"
-    else:
-        sentiment = "Neutral"
-
-    return sentiment_score, sentiment
+    try:
+        rating = float(rating)
+        if rating >= 4:
+            return "Positive"
+        elif rating == 3:
+            return "Neutral"
+        else:
+            return "Negative"
+    except (ValueError, TypeError):
+        return "Neutral"
 
 def preprocess_for_model(tokens):
     return ' '.join(tokens)

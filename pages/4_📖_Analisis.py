@@ -24,16 +24,11 @@ def main():
             return
 
         # Verify required columns
-        required_columns = ['review_text', 'stemmed', 'Text_for_Model']
+        required_columns = ['review_text', 'stemmed', 'Text_for_Model', 'Sentiment']
         missing_columns = [col for col in required_columns if col not in processed_data.columns]
         if missing_columns:
             st.error(f"Kolom berikut tidak ditemukan di dataset: {', '.join(missing_columns)}")
             return
-
-        # Recompute sentiment scores to ensure correct word-based analysis
-        positive_words, negative_words = load_sentiment_lexicon()
-        processed_data[['Sentiment Score', 'Sentiment']] = processed_data['stemmed'].apply(
-            lambda x: pd.Series(label_sentiment(x, positive_words, negative_words)))
 
         # --- Visualization Section ---
         st.subheader("📈 Visualisasi Hasil Analisis")
@@ -45,8 +40,8 @@ def main():
 
         # Sentiment Table
         st.write("### Sentimen")
-        st.write("Tabel ini menampilkan teks asli, kata-kata yang telah distem, skor sentimen, dan label sentimen.")
-        st.dataframe(processed_data[['review_text', 'stemmed', 'Sentiment Score', 'Sentiment']])
+        st.write("Tabel ini menampilkan teks asli, kata-kata yang telah distem, dan label sentimen.")
+        st.dataframe(processed_data[['review_text', 'stemmed', 'Sentiment']])
         st.write("Distribusi Sentimen:", processed_data['Sentiment'].value_counts())
 
         # Check for sufficient sentiment classes

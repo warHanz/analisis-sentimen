@@ -18,9 +18,6 @@ def main():
         return
 
     with st.spinner("Memproses data..."):
-        # Memuat leksikon sentimen
-        positive_words, negative_words = load_sentiment_lexicon()
-
         # Load data
         data = load_data(uploaded_file)
         if data is None:
@@ -51,8 +48,6 @@ def main():
         # Step 3: Normalization
         norm_dict = None
         kamus_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', "assets", "kamuskatabaku.xlsx")
-
-        st.info(f"Mencoba memuat kamus dari: {kamus_path}")
         
         if os.path.exists(kamus_path):
             try:
@@ -82,15 +77,14 @@ def main():
         # Filter out empty stemmed data
         processed_data = processed_data[processed_data['stemmed'].apply(len) > 0]
 
-        # Apply sentiment labeling
-        processed_data[['Sentiment Score', 'Sentiment']] = processed_data['stemmed'].apply(
-            lambda x: pd.Series(label_sentiment(x, positive_words, negative_words)))
+        # Apply sentiment labeling based on Rating
+        processed_data['Sentiment'] = processed_data['Rating'].apply(label_sentiment)
         processed_data['Text_for_Model'] = processed_data['stemmed'].apply(preprocess_for_model)
 
         # Display Overview Table
         st.subheader("📋 Tabel Overview Preprocessing")
         st.write("Tabel menampilkan teks asli dan hasil setiap tahap preprocessing.")
-        overview_table = processed_data[['review_text', 'cleaning', 'normalize', 'tokenize', 'remove_stopword', 'stemmed']]
+        overview_table = processed_data[['review_text', 'cleaning', 'normalize', 'tokenize', 'remove_stopword', 'stemmed', 'Sentiment']]
         st.dataframe(overview_table)
 
         # Display Data Count Graph
